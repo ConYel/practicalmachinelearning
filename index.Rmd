@@ -55,7 +55,7 @@ validData = trData[-inTrain, ]
 ```
 
 ## Searching for the best Machine Learning Method for prediction regarding these data
-### 1st using Random Forests
+### 1st using Random Forest
 ```{r}
 rForest = randomForest(classe~., data=trainData, ntree = 300)
 print(rForest, digits = 3)
