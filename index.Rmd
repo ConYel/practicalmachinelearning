@@ -91,6 +91,7 @@ valid_tr = predict(classtr, validData)
 ```
 Using classification tree the accuracy is 0.4997961, the lowest so far accuracy
 
+### Concluding
 From the three  ML methods we used for this dataset, random forest method has the best accuracy and so it's the best method to use. Accuracy 0.996 and so the out-of-sample error rate is 0.004
 
 
