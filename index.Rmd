@@ -2,29 +2,95 @@
 title: "Practical Machine Learning Course Final Project"
 author: "Constantinos Yeles"
 date: "July 5, 2018"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
+editor_options: 
+  chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Practical Machine Learning Course - Final Project
+
+## First download the data sets in the working directory manually
+For the purpose of the analysis we need consistent data and so we modify empty stings and division error strings with zero as NA values
+```{r}
+training = read.csv("pml-training.csv", na.strings = c("NA", "#DIV/0!",""))
+testing  = read.csv("pml-testing.csv", na.strings = c("NA", "#DIV/0!",""))
+dim(training)
+dim(testing)
+View(training)
+sum(is.na(training$min_roll_belt))
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+## Cleaning the Data From NAs and variables with minimun to none predictive value 
+As we can observe, there are 19622 observations and 160 variables for the training set and the test set has 20 observations and 160 variables.
+Many of these observations have NA values and we need to clean the data sets from them.
+```{r}
+training = training[, colSums(is.na(training)) == 0]
+testing = testing[, colSums(is.na(testing)) == 0]
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+Looking at the Data we can observe that the first seven columns have little valuable or none information.
+```{r}
+names(training[,1:7])
+```
+So we drop them from the Data
+```{r}
+trData = training[, -c(1:7)]
+teData = testing[, -c(1:7)]
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Loading the R packages for Machine learning
+```{r}
+library(caret); library(rattle); library(rpart); library(rpart.plot)
+library(randomForest)
+```
+
+## Splitting the Data for Cross-Validation
+```{r}
+set.seed(4365)
+inTrain = createDataPartition(trData$classe, p = 0.75, list = FALSE)
+trainData = trData[inTrain, ]
+validData = trData[-inTrain, ]
+```
+
+## Searching for the best Machine Learning Method for prediction regarding these data
+### 1st using Random Forests
+```{r}
+rForest = randomForest(classe~., data=trainData, ntree = 300)
+print(rForest, digits = 3)
+
+valid_rf = predict(rForest, validData)
+(confMatr_rf = confusionMatrix(validData$classe, valid_rf))
+(accuracy_rf = confMatr_rf$overall[1])
+(predict(rForest, teData))
+```
+So Random Forest method has a very high Accuracy : 0.99531.
+
+### 2nd using SVM
+```{r}
+library(e1071)
+svm1 = svm(classe ~ ., data = trainData)
+valid_svm = predict(svm1, validData)
+(confMatr_svm = confusionMatrix(validData$classe, valid_svm))
+(accuracy_svm = confMatr_svm$overall[1])
+(predict(svm1, teData))
+```
+The svm method has a good Accuracy 0.9445351 but not that high as Random Forest.
+
+### 3rd using classification tree
+```{r}
+classtr = train(classe ~ ., method = "rpart", data= trainData)
+print(classtr, digits = 3)
+fancyRpartPlot(classtr$finalModel)
+
+valid_tr = predict(classtr, validData)
+(confMatr_tr = confusionMatrix(validData$classe, valid_tr))
+(accuracy_tr = confMatr_tr$overall[1])
+(predict(classtr, teData))
+```
+Using classification tree the accuracy is 0.4997961, the lowest so far accuracy
+
+From the three  ML methods we used for this dataset, random forest method has the best accuracy and so it's the best method to use. Accuracy 0.996 and so the out-of-sample error rate is 0.004
+
+
